@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator 3D</title>
+  <style>
+    :root {
+      --bg-color: #1e1e1e;
+      --text-color: white;
+      --button-bg: #444;
+      --highlight: #00ffc3;
+      --display-bg: #000;
+    }
+
+    body.light {
+      --bg-color: #f0f0f0;
+      --text-color: #000;
+      --button-bg: #ccc;
+      --highlight: #00b894;
+      --display-bg: #fff;
+    }
+
+    body {
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .calculator {
+      background: var(--button-bg);
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 0 20px var(--highlight);
+      width: 330px;
+      max-width: 95vw;
+      transition: all 0.3s ease;
+    }
+
+    .display {
+      background: var(--display-bg);
+      padding: 15px;
+      font-size: 22px;
+      border-radius: 8px;
+      text-align: right;
+      margin-bottom: 15px;
+      color: var(--highlight);
+      height: auto;
+      max-height: 80px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button {
+      padding: 18px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      background: var(--button-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      transition: 0.15s;
+      box-shadow: 0 4px var(--highlight), inset 0 -2px 0 rgba(0,0,0,0.3);
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px var(--highlight), inset 0 2px 5px rgba(0,0,0,0.5);
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 15px;
+      font-size: 24px;
+      color: var(--text-color);
+    }
+
+    .mode-toggle,
+    .theme-toggle {
+      position: absolute;
+      top: 10px;
+      background: var(--highlight);
+      color: #000;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    .mode-toggle { right: 10px; }
+    .theme-toggle { left: 10px; }
+
+    .loading {
+      display: inline-block;
+      margin-left: 10px;
+    }
+
+    .loading span {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      margin: 0 1px;
+      background: var(--highlight);
+      border-radius: 50%;
+      animation: bounce 1s infinite;
+    }
+
+    .loading span:nth-child(2) { animation-delay: 0.2s; }
+    .loading span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @media (max-width: 600px) {
+      .calculator { transform: scale(1.05); }
+    }
+
+    .mobile-mode .calculator {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body>
+
+<button class="mode-toggle" onclick="toggleMode()">Tampilan</button>
+<button class="theme-toggle" onclick="toggleTheme()">Tema</button>
+
+<div class="calculator">
+  <div class="title">Kalkulator 3D</div>
+  <div class="display" id="display">0</div>
+  <div class="buttons">
+    <button onclick="press('7')">7</button>
+    <button onclick="press('8')">8</button>
+    <button onclick="press('9')">9</button>
+    <button onclick="press('+')">+</button>
+    
+    <button onclick="press('4')">4</button>
+    <button onclick="press('5')">5</button>
+    <button onclick="press('6')">6</button>
+    <button onclick="press('-')">−</button>
+    
+    <button onclick="press('1')">1</button>
+    <button onclick="press('2')">2</button>
+    <button onclick="press('3')">3</button>
+    <button onclick="press('*')">×</button>
+    
+    <button onclick="press('0')">0</button>
+    <button onclick="press('.')">.</button>
+    <button onclick="calculate()">=</button>
+    <button onclick="press('/')">÷</button>
+    
+    <button onclick="clearDisplay()" style="grid-column: span 4; background: #ff3c3c;">C</button>
+  </div>
+</div>
+
+<!-- Audio klik -->
+<audio id="clickSound" preload="auto">
+  <source src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCA..." type="audio/mp3">
+</audio>
+
+<script>
+  let currentInput = '';
+  const clickSound = document.getElementById('clickSound');
+
+  function playClick() {
+    clickSound.currentTime = 0;
+    clickSound.play();
+  }
+
+  function press(val) {
+    playClick();
+    currentInput += val;
+    document.getElementById('display').innerText = currentInput;
+  }
+
+  function clearDisplay() {
+    playClick();
+    currentInput = '';
+    document.getElementById('display').innerText = '0';
+  }
+
+  function calculate() {
+    playClick();
+    const display = document.getElementById('display');
+
+    if (currentInput.trim() === '') {
+      display.innerText = "Harap isi dahulu!";
+      return;
+    }
+
+    const operatorRegex = /[\+\-\*\/]/;
+    if (!operatorRegex.test(currentInput)) {
+      display.innerText = "Harus ada operator!";
+      return;
+    }
+
+    const parts = currentInput.split(operatorRegex);
+    const operatorMatch = currentInput.match(operatorRegex);
+
+    if (parts.length < 2 || parts[0] === '' || parts[1] === '' || !operatorMatch) {
+      display.innerText = "Butuh 2 variabel!";
+      return;
+    }
+
+    display.innerHTML = `Aku pikir dulu...<span class="loading"><span></span><span></span><span></span></span>`;
+    currentInput = '';
+
+    setTimeout(() => {
+      const resultNgambek = [
+        "Hitung sendiri lah 😒", "Lagi males...", "Coba lain kali deh", "Aku capek, kamu aja",
+        "404: Mood Not Found", "Tanya Google aja!", "Hasilnya... rahasia!",
+        "Kamu pikir aku kalkulator beneran?", "Au ah Ngambek 😤", "Ga ada Males gw😤",
+        "Hasilnya? Gak tau!", "Hello World!", "∞ + 1 (gak penting)", "Bukan urusan aku",
+        "Aku diem dulu ya...", "Kalkulator sedang cuti 💤", "Kamu tanya, aku diam",
+        "Aku loading selamanya...", "Aku robot, bukan budak hitung 😑", "Lihat langit dulu sana...",
+        "Kenapa gak kamu aja yang hitung?", "Fokus dulu baru hitung", "Sabar, tapi aku tetap ga mau",
+        "Ketik ulang, mungkin aku berubah pikiran", "Listrik hati habis 🔋"
+      ];
+      const randomResult = resultNgambek[Math.floor(Math.random() * resultNgambek.length)];
+      display.innerText = randomResult;
+    }, 3000);
+  }
+
+  function toggleMode() {
+    document.body.classList.toggle("mobile-mode");
+  }
+
+  function toggleTheme() {
+    document.body.classList.toggle("light");
+  }
+</script>
+
+</body>
+</html>
